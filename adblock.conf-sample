@@ -4,7 +4,7 @@
 NAMED_ETC="/var/named/etc"
 # path to bind's adblock.conf
 # touch it if installing adblock on a new system
-NAMED_ADBLOCK_CONF="${NAMED_ETC}/adblock.conf"
+NAMED_ADBLOCK_CONF="${NAMED_ETC}/named-adblock.conf"
 # for ip blocking, path to the file holding adserver ips
 ADSERVERIPS="/etc/pf-tables/adservers"
 # export complete list of blocked zones to this file after adding new zones
