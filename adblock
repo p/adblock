@@ -1,0 +1,74 @@
+#!/bin/sh
+
+# DNS level adblocking script
+# Now with ip blocking via pf
+# Written for OpenBSD 3.7 (currently tested on 3.9) with bind
+
+found_config=no
+for etc in /etc /usr/local/etc; do
+    if [ -f $etc/adblock.conf ]; then
+        . $etc/adblock.conf
+	found_config=yes
+        break
+    fi
+done
+
+if [ "$found_config" != "yes" ]; then
+    echo "Configuration file not found" 1>&2
+    exit 1
+fi
+
+if [ ! -f $NAMED_ADBLOCK_CONF ]; then
+    echo "Bind's adblock.conf, ${NAMED_ADBLOCK_CONF}, is not found" 1>&2
+    echo "If this is the first time you're running adblock on this system, touch it" 1>&2
+    exit 1
+fi
+
+if [ -z "$1" ]; then
+    echo "Usage: $(basename $0) domain [domain ...]" 1>&2
+    exit 1
+fi
+
+need_named_reload=""
+
+while [ -n "$1" ]; do
+    # is it a hostname or an ip address?
+    if echo $1 | egrep -q '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+        ip=$1
+        if ! grep -q $(echo $ip | sed -e 's/\./\\./g') < ${ADSERVERIPS}; then
+            echo $ip >> ${ADSERVERIPS}
+            pfctl -t adservers -T add $ip 2>/dev/null
+            echo A $ip
+        else
+            echo E $ip
+        fi
+    else
+        # lowercase domain
+        domain=$(echo "$1" | sed -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/)
+        if ! awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | grep -q "\"$(echo $domain | sed -e 's/\./\\./g')\"" ; then
+            echo "zone \"$domain\" { type master; file \"master/adblock\"; };" >> ${NAMED_ADBLOCK_CONF}
+            echo A $domain
+            need_named_reload="1"
+        else
+            echo E $domain
+        fi
+    fi
+    shift
+done
+
+if [ -f $ADSERVERIPS ]; then
+    adserveripcount=$(wc -l < ${ADSERVERIPS})
+else
+    adserveripcount="0"
+fi
+
+echo $(wc -l < ${NAMED_ADBLOCK_CONF}) zones and $adserveripcount addresses currently blocked.
+if [ "$need_named_reload" = "1" ]; then
+    echo Restarting nameserver ...
+    rndc reload
+    
+    if [ -n "$DNSBLOCKLIST" ]; then
+        awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
+        sort < ${NAMED_ADBLOCK_CONF} > `dirname ${DNSBLOCKLIST}`/adblock.conf
+    fi
+fi

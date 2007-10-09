@@ -1,0 +1,8 @@
+$TTL 24h
+
+@	IN SOA ns.universe. hostnaster.ns.universe. (
+		1 86400 300 604800 3600)
+
+@	IN	NS	ns.universe.
+@	IN	A	10.0.0.253
+*	IN	A	10.0.0.253

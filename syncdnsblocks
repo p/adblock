@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# Synchronizes DNS blocklist from master dns server
+#
+# Universe is running a DNS server which blocks certain domains.
+# Elsewhere, we don't have access to universe's DNS server
+# yet we still want to have those domains blocked.
+#
+# Solution: dynamically update hosts file depending on location
+#
+# If the nameserver we're using is the universe's nameserver,
+# remove all hosts entries (these are mapped to a special IP
+# inside universe) but make a list of all current entries
+# and save them locally.
+#
+# If the nameserver we're using is not universe's, take the
+# hosts that would be blocked in universe and install them into
+# the hosts file.
+
+DNS_MASTER="10.0.0.254"
+BLOCKLIST_URL="http://${DNS_MASTER}/cgi-bin/dnsblocklist"
+BLOCKLIST_CACHE="/var/state/dnsblocklist"
+
+if [ -n "$NAMESERVER" ]; then
+    nameserver="$NAMESERVER"
+else
+    nameserver=$(cat /etc/resolv.conf | grep ^nameserver | awk '{ print $2 }')
+fi
+
+cp /etc/hosts.master /etc/hosts
+
+if [ "$nameserver" == "$DNS_MASTER" ]; then
+    wget -O $BLOCKLIST_CACHE $BLOCKLIST_URL
+elif [ -f $DNSBLOCKLIST ]; then
+    for host in $(cat $BLOCKLIST_CACHE); do
+        echo 127.0.0.1 $host >> /etc/hosts
+    done
+fi
