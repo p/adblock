@@ -57,10 +57,10 @@ case $layout in
 		;;
 esac
 
-mkdir -p $adblock_dir || exit 3
-cp adblock $adblock_dir || exit 3
-mkdir -p $adblock_conf_dir || exit 3
-cp adblock.conf-sample $adblock_conf_dir/adblock.conf || exit 3
+install -d -m 755 $adblock_dir || exit 3
+install -m 755 adblock $adblock_dir || exit 3
+install -d -m 755 $adblock_conf_dir || exit 3
+install -m 644 adblock.conf-sample $adblock_conf_dir/adblock.conf || exit 3
 sed -i "" -e 's/NAMED_ETC=".*"/NAMED_ETC="'$named_etc'"/' $adblock_conf_dir/adblock.conf || exit 3
 
 if [ ! -e $named_adblock_conf ]; then
@@ -71,7 +71,7 @@ if [ $force = false ] && [ -e $named_zone ]; then
 	echo "You already have adblock zone file, $named_zone."
 	echo "If you want to replace it, use -f option."
 else
-	cp named.zone.adblock $named_zone || exit 3
+	install -m 644 named.zone.adblock $named_zone || exit 3
 	echo "You will probably want to edit the adblock zone file, $named_zone,"
 	echo "to be appropriate for your network."
 fi
