@@ -48,7 +48,7 @@ case $layout in
 		;;
 	openbsd )
 		named_config=/var/named
-		named_config_etc=$named_config/etc
+		named_etc=$named_config/etc
 		named_adblock_conf=$named_etc/named-adblock.conf
 		named_conf=$named_etc/named.conf
 		named_zone=$named_config/master/adblock
@@ -60,8 +60,10 @@ esac
 install -d -m 755 $adblock_dir || exit 3
 install -m 755 adblock $adblock_dir || exit 3
 install -d -m 755 $adblock_conf_dir || exit 3
-install -m 644 adblock.conf-sample $adblock_conf_dir/adblock.conf || exit 3
-sed -i "" -e 's/NAMED_ETC=".*"/NAMED_ETC="'$named_etc'"/' $adblock_conf_dir/adblock.conf || exit 3
+# -i option to sed is nonportable, and does not exist on openbsd in particular
+# don't use / as separator as it occurs in paths
+sed -e 's:NAMED_ETC=".*":NAMED_ETC="'$named_etc'":' adblock.conf-sample >$adblock_conf_dir/adblock.conf || exit 3
+chmod 0644 $adblock_conf_dir/adblock.conf || exit 3
 
 if [ ! -e $named_adblock_conf ]; then
 	touch $named_adblock_conf || exit 3
