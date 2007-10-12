@@ -1,0 +1,32 @@
+#!/bin/sh
+
+# allow overriding resolv.conf location for testing
+RESOLV_CONF=${RESOLV_CONF:-/etc/resolv.conf}
+
+# change to location of named.conf on your system, if necessary
+# this default is for freebsd
+NAMED_CONF=${NAMED_CONF:-/etc/namedb/named.conf}
+
+# do not use local nameserver on networks that have network-wide adblock configuration
+# in this case networks with gateways 10.0.0.254 and 10.0.3.254 have ad blocking
+if grep -q 'nameserver 10\.0\.[03]\.254' $RESOLV_CONF; then
+    exit
+fi
+
+case $reason in
+    "BOUND"|"RENEW"|"REBIND"|"REBOOT")
+        # use DNS servers obtained by dhclient as forwarders
+        forwarders=$(echo "forwarders {" $(grep ^nameserver <$RESOLV_CONF |awk '{ print $2 ";" }') "};")
+        # don't rely on spaces inside forwarders declaration in case the previous run left a blank forwarders line
+        # note: -E and -i switches to sed are non-portable and won't work on openbsd, in particular 
+        sed -E -i "" -e 's/[ \t]*forwarders {.*};/'"$forwarders"'/' $NAMED_CONF
+        # tell name server to use new forwarders
+        rndc reload
+        # replace nameserver declarations in resolv.conf
+        tempfile=`mktemp -t dhclient_hook`
+        <$RESOLV_CONF sed -e '/^nameserver/d' > $tempfile
+        echo nameserver 127.0.0.1 >> $tempfile
+        # copy instead of moving to preserve resolv.conf's permissions and ownership
+        cp $tempfile $RESOLV_CONF
+        rm $tempfile
+esac
