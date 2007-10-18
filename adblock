@@ -1,14 +1,25 @@
 #!/bin/sh
 
+# Copyright (c) 2006-2007 Oleg Pudeyev
+#
+# This program is distributed under the terms of the MIT License as found 
+# in a file called MIT-LICENSE. If it is not present, the license
+# is always available at http://www.opensource.org/licenses/mit-license.php.
+#
+# This program is distributed in the hope that it will be useful, but
+# without any waranty; without even the implied warranty of merchantability
+# or fitness for a particular purpose. See the MIT License for full details.
+
 # DNS level adblocking script
-# Now with ip blocking via pf
-# Written for OpenBSD 3.7 (currently tested on 3.9) with bind
+# Now with ip blocking via pf and support for a shared adserver repository
+# Written for OpenBSD 3.7 with bind
+# Currently tested on OpenBSD 3.9 and 4.1 and FreeBSD 6.2
 
 found_config=no
 for etc in /etc /usr/local/etc; do
     if [ -f $etc/adblock.conf ]; then
         . $etc/adblock.conf
-	found_config=yes
+        found_config=yes
         break
     fi
 done
@@ -19,14 +30,44 @@ if [ "$found_config" != "yes" ]; then
 fi
 
 if [ ! -f $NAMED_ADBLOCK_CONF ]; then
-    echo "Bind's adblock.conf, ${NAMED_ADBLOCK_CONF}, is not found" 1>&2
+    echo "Bind's named-adblock.conf, ${NAMED_ADBLOCK_CONF}, is not found" 1>&2
     echo "If this is the first time you're running adblock on this system, touch it" 1>&2
     exit 1
 fi
 
-if [ -z "$1" ]; then
-    echo "Usage: $(basename $0) domain [domain ...]" 1>&2
+usage() {
+    echo "Usage: $(basename $0) [-h] [-l] domain [domain ...]"
+    echo
+    echo "    -h    This help"
+    echo "    -l    Work locally, do not update web repository"
     exit 1
+}
+
+local_only=no
+while getopts :hl option; do
+    case $option in
+        h )
+            usage ;;
+        l )
+            local_only=yes ; shift ;;
+        * )
+            usage ;;
+    esac
+done
+
+if [ -z "$1" ]; then
+    usage
+fi
+
+web_client=""
+if [ $local_only = no ] && [ -n "$WEB_REPOSITORY" ]; then
+    for client in "wget -q -O -" "fetch -q -o -"; do
+        which `echo $client |awk '{print $1}'` >/dev/null
+        if [ $? = 0 ]; then
+            web_client="$client"
+            break
+        fi
+    done
 fi
 
 need_named_reload=""
@@ -47,11 +88,17 @@ while [ -n "$1" ]; do
         domain=$(echo "$1" | sed -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/)
         if ! awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | grep -q "\"$(echo $domain | sed -e 's/\./\\./g')\"" ; then
             echo "zone \"$domain\" { type master; file \"master/adblock\"; };" >> ${NAMED_ADBLOCK_CONF}
-            echo A $domain
+            status=A
             need_named_reload="1"
         else
-            echo E $domain
+            status=E
         fi
+        if [ -n "$web_client" ]; then
+            extra_status="/$(printf %-6s `$web_client ${WEB_REPOSITORY}$domain`)"
+        else
+            extra_status=""
+        fi
+        echo "$status$extra_status" $domain
     fi
     shift
 done
