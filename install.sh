@@ -40,6 +40,7 @@ case $layout in
 	freebsd )
 		named_config=/etc/namedb
 		named_etc=$named_config
+		named_etc_subdir=
 		named_adblock_conf=$named_etc/named-adblock.conf
 		named_conf=$named_etc/named.conf
 		named_zone=$named_config/master/adblock
@@ -49,6 +50,7 @@ case $layout in
 	openbsd )
 		named_config=/var/named
 		named_etc=$named_config/etc
+		named_etc_subdir=etc/
 		named_adblock_conf=$named_etc/named-adblock.conf
 		named_conf=$named_etc/named.conf
 		named_zone=$named_config/master/adblock
@@ -78,10 +80,10 @@ else
 	echo "to be appropriate for your network."
 fi
 
-if ! grep -q 'include.*named-adblock\.conf' $named_conf ; then
+if ! grep -q "include.*${named_etc_subdir}named-adblock\\.conf" $named_conf ; then
 	echo
 	echo "You will need to add a directive to include named-adblock.conf into your named.conf."
 	echo "If you have a standard installation, you can do:"
 	echo
-	echo "echo 'include \"named-adblock.conf\";' >> $named_conf"
+	echo "echo 'include \"${named_etc_subdir}named-adblock.conf\";' >> $named_conf"
 fi
