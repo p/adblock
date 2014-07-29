@@ -27,6 +27,11 @@ case `uname -s` in
 		layout=freebsd ;;
 	OpenBSD )
 		layout=openbsd ;;
+	Linux )
+		if test -f /etc/debian_version; then
+			layout=debian
+		fi
+		;;
 esac
 
 if [ $layout = unknown ]; then
@@ -44,6 +49,7 @@ case $layout in
 		named_adblock_conf=$named_etc/named-adblock.conf
 		named_conf=$named_etc/named.conf
 		named_zone=$named_config/master/adblock
+		named_restart_cmd="rndc reload"
 		adblock_dir=/usr/local/sbin
 		adblock_conf_dir=/usr/local/etc
 		;;
@@ -54,6 +60,18 @@ case $layout in
 		named_adblock_conf=$named_etc/named-adblock.conf
 		named_conf=$named_etc/named.conf
 		named_zone=$named_config/master/adblock
+		named_restart_cmd="rndc reload"
+		adblock_dir=/usr/local/sbin
+		adblock_conf_dir=/etc
+		;;
+	debian )
+		named_config=/etc/bind
+		named_etc=$named_config
+		named_etc_subdir=
+		named_adblock_conf=$named_etc/named.conf.adblock
+		named_conf=$named_etc/named.conf.local
+		named_zone=$named_config/db.adblock
+		named_restart_cmd="/etc/init.d/bind9 reload"
 		adblock_dir=/usr/local/sbin
 		adblock_conf_dir=/etc
 		;;
@@ -64,7 +82,12 @@ install -m 755 adblock $adblock_dir || exit 3
 install -d -m 755 $adblock_conf_dir || exit 3
 # -i option to sed is nonportable, and does not exist on openbsd in particular
 # don't use / as separator as it occurs in paths
-sed -e 's:NAMED_ETC=".*":NAMED_ETC="'$named_etc'":' adblock.conf-sample >$adblock_conf_dir/adblock.conf || exit 3
+sed \
+	-e "s:NAMED_ETC=\".*\":NAMED_ETC=\"$named_etc\":" \
+	-e "s:NAMED_ADBLOCK_CONF=\"\":NAMED_ADBLOCK_CONF=\"$named_adblock_conf\":" \
+	-e "s:ADBLOCK_ZONE_FILE=\"\":ADBLOCK_ZONE_FILE=\"$named_zone\":" \
+	-e "s:NAMED_RESTART_CMD=\".*\":NAMED_RESTART_CMD=\"$named_restart_cmd\":" \
+	adblock.conf-sample >$adblock_conf_dir/adblock.conf || exit 3
 chmod 0644 $adblock_conf_dir/adblock.conf || exit 3
 
 if [ ! -e $named_adblock_conf ]; then
@@ -80,10 +103,10 @@ else
 	echo "to be appropriate for your network."
 fi
 
-if ! grep -q "include.*${named_etc_subdir}named-adblock\\.conf" $named_conf ; then
+if ! fgrep -q "$named_adblock_conf" $named_conf |fgrep -q include ; then
 	echo
-	echo "You will need to add a directive to include named-adblock.conf into your named.conf."
+	echo "You will need to add a directive to include $named_adblock_conf into your $named_conf."
 	echo "If you have a standard installation, you can do:"
 	echo
-	echo "echo 'include \"${named_etc_subdir}named-adblock.conf\";' >> $named_conf"
+	echo "echo 'include \"$named_adblock_conf\";' >> $named_conf"
 fi

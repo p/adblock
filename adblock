@@ -87,7 +87,7 @@ while [ -n "$1" ]; do
         # lowercase domain
         domain=$(echo "$1" | sed -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/)
         if ! awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | grep -q "\"$(echo $domain | sed -e 's/\./\\./g')\"" ; then
-            echo "zone \"$domain\" { type master; file \"master/adblock\"; };" >> ${NAMED_ADBLOCK_CONF}
+            echo "zone \"$domain\" { type master; file \"$ADBLOCK_ZONE_FILE\"; };" >> ${NAMED_ADBLOCK_CONF}
             status=A
             need_named_reload="1"
         else
@@ -112,7 +112,7 @@ fi
 echo $(wc -l < ${NAMED_ADBLOCK_CONF}) zones and $adserveripcount addresses currently blocked.
 if [ "$need_named_reload" = "1" ]; then
     echo Restarting nameserver ...
-    rndc reload
+    eval $NAMED_RESTART_CMD
     
     if [ -n "$DNSBLOCKLIST" ]; then
         awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
