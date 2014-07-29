@@ -1,8 +1,8 @@
 $TTL 24h
 
-@	IN SOA ns.universe. hostnaster.ns.universe. (
+@	IN SOA ns.here. hostnaster.ns.here. (
 		1 86400 300 604800 3600)
 
-@	IN	NS	ns.universe.
+@	IN	NS	ns.here.
 @	IN	A	10.0.0.253
 *	IN	A	10.0.0.253
