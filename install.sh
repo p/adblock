@@ -43,7 +43,11 @@ fi
 echo Using $layout layout.
 case $layout in
   freebsd )
-    named_config=/etc/namedb
+    if test -d /usr/local/etc/namedb; then
+      named_config=/usr/local/etc/namedb
+    else
+      named_config=/etc/namedb
+    fi
     named_etc=$named_config
     named_etc_subdir=
     named_adblock_conf=$named_etc/named-adblock.conf
