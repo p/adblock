@@ -63,7 +63,8 @@ case $layout in
     named_etc_subdir=etc/
     named_adblock_conf=$named_etc/named-adblock.conf
     named_conf=$named_etc/named.conf
-    named_zone=$named_config/master/adblock
+    # openbsd runs bind in chroot, path is relative to chroot here
+    named_zone=master/adblock
     named_restart_cmd="rndc reload"
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/etc
