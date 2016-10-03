@@ -28,7 +28,7 @@ case `uname -s` in
   OpenBSD )
     layout=openbsd ;;
   Linux )
-    if test -f /etc/debian_version; then
+    if test -f /etc/debian_version || test -f /etc/devuan_version; then
       layout=debian
     fi
     ;;
