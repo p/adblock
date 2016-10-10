@@ -13,5 +13,7 @@ NAMED_RESTART_CMD="rndc reload"
 ADSERVERIPS="/etc/pf-tables/adservers"
 # export complete list of blocked zones to this file after adding new zones
 DNSBLOCKLIST="/var/www/htdocs/dnsblocklist"
+# create one file per blocked zone in this directory
+DNSBLOCKLISTDIR="/var/dnsblocklist"
 # add blocked sites to web repository as well
 WEB_REPOSITORY="http://adservers.your-site.com/add?user=adblock&password=sekrit&name="

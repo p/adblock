@@ -40,23 +40,46 @@ usage() {
     echo
     echo "    -h    This help"
     echo "    -l    Work locally, do not update web repository"
+    echo "    -w    Update DNS block list only"
+    echo 
     exit 1
 }
 
 local_only=no
-while getopts :hl option; do
+dnsblocklist_only=false
+while getopts :hlw option; do
     case $option in
         h )
             usage ;;
         l )
             local_only=yes ; shift ;;
+        w )
+           dnsblocklist_only=true; shift;; 
         * )
             usage ;;
     esac
 done
 
-if [ -z "$1" ]; then
-    usage
+if test -z "$1" && ! $dnsblocklist_only; then
+    usage 1>&2
+    exit
+fi
+
+update_dnsblocklists() {
+    if [ -n "$DNSBLOCKLIST" ]; then
+        awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
+        sort < ${NAMED_ADBLOCK_CONF} > `dirname ${DNSBLOCKLIST}`/adblock.conf
+    fi
+    if [ -n "$DNSBLOCKLISTDIR" ]; then
+        for domain in $(awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/'); do
+            touch "$DNSBLOCKLISTDIR/$domain"
+        done
+    fi
+}
+
+if eval $dnsblocklist_only; then
+    update_dnsblocklists
+    exit
 fi
 
 web_client=""
@@ -93,6 +116,10 @@ while [ -n "$1" ]; do
         else
             status=E
         fi
+
+        if test "$status" = A && [ -n "$DNSBLOCKLISTDIR" ]; then
+            touch "$DNSBLOCKLISTDIR/$domain"
+        fi
         if [ -n "$web_client" ]; then
             extra_status="/$(printf %-6s `$web_client ${WEB_REPOSITORY}$domain`)"
         else
@@ -114,8 +141,5 @@ if [ "$need_named_reload" = "1" ]; then
     echo Restarting nameserver ...
     eval $NAMED_RESTART_CMD
     
-    if [ -n "$DNSBLOCKLIST" ]; then
-        awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
-        sort < ${NAMED_ADBLOCK_CONF} > `dirname ${DNSBLOCKLIST}`/adblock.conf
-    fi
+    update_dnsblocklists
 fi
