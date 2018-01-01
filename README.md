@@ -122,4 +122,4 @@ file, e.g. `/etc/bind/named.conf.adblock`.
 
 ## License
 
-Adblock is licensed under the MIT license.
+Adblock is released under the MIT license.
