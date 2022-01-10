@@ -123,3 +123,8 @@ file, e.g. `/etc/bind/named.conf.adblock`.
 ## License
 
 Adblock is released under the MIT license.
+
+
+
+this line should treated as dummy line
+
