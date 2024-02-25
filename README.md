@@ -18,7 +18,7 @@ of each computer.
 ## Installation
 
 First you need to install BIND if you don't already have it.
-On Debian try `apt-get install bind9`.
+On Debian, run `apt-get install bind9`.
 
 Adblock knows how to install itself on FreeBSD, OpenBSD and Debian GNU/Linux.
 Other operating systems should be quite easy to add support for.
