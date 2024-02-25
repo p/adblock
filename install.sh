@@ -98,9 +98,11 @@ case $layout in
     ;;
 esac
 
-install -d -m 755 $adblock_dir || exit 3
-install -m 755 adblock $adblock_dir || exit 3
-install -d -m 755 $adblock_conf_dir || exit 3
+install_cmd="install -o root -g root"
+
+eval $install_cmd -d -m 755 $adblock_dir || exit 3
+eval $install_cmd -m 755 adblock $adblock_dir || exit 3
+eval $install_cmd -d -m 755 $adblock_conf_dir || exit 3
 # -i option to sed is nonportable, and does not exist on openbsd in particular
 # don't use / as separator as it occurs in paths
 sed \
@@ -116,14 +118,14 @@ if [ ! -e $named_adblock_conf ]; then
 fi
 
 if test $dhclient; then
-  install -o root -g root -m 555 dhclient-exit-hooks $dhclient_exit_hooks
+  eval $install_cmd -m 755 dhclient-exit-hooks $dhclient_exit_hooks
 fi
 
 if [ $force = false ] && [ -e $named_zone ]; then
   echo "You already have adblock zone file, $named_zone."
   echo "If you want to replace it, use -f option."
 else
-  install -m 644 named.zone.adblock $named_zone || exit 3
+  eval $install_cmd -m 644 named.zone.adblock $named_zone || exit 3
   echo "You will probably want to edit the adblock zone file, $named_zone,"
   echo "to be appropriate for your network."
 fi
