@@ -39,7 +39,7 @@ if [ $layout = unknown ]; then
   exit 2
 fi
 
-# use two stages so that multiple systems can use one layout
+# use two stages so that multiple systems can use the same layout.
 echo Using $layout layout.
 case $layout in
   freebsd )
@@ -76,7 +76,15 @@ case $layout in
     named_adblock_conf=$named_etc/named.conf.adblock
     named_conf=$named_etc/named.conf.local
     named_zone=$named_config/db.adblock
-    named_restart_cmd="/etc/init.d/bind9 reload"
+    if test -x /etc/init.d/bind9; then
+      init_script=/etc/init.d/bind9
+    elif test -x /etc/init.d/named; then
+      init_script=/etc/init.d/named
+    else
+      echo "Missing bind9 init script or it is installed in an unsupported location" 1>&2
+      exit 1
+    fi
+    named_restart_cmd="$init_script reload"
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/etc
     ;;
