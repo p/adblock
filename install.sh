@@ -5,8 +5,8 @@
 usage() {
   echo "Usage: `basename $0` [-f] [-h]"
   echo "  -f  Force overwrite of adblock zone file, if it already exists"
-  echo "  -h  This help"
-  exit 1
+  echo "  -h  This help text"
+  exit ${1:-1}
 }
 
 force=false
@@ -15,7 +15,7 @@ while getopts ":fh" option; do
     f )
       force=true ;;
     h )
-      usage ;;
+      usage 0 ;;
     * )
       usage ;;
   esac
