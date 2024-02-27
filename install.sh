@@ -115,13 +115,27 @@ eval $install_cmd -m 755 adblock $adblock_dir || exit 3
 eval $install_cmd -d -m 755 $adblock_conf_dir || exit 3
 # -i option to sed is nonportable, and does not exist on openbsd in particular
 # don't use / as separator as it occurs in paths
-sed \
-  -e "s:NAMED_ETC=\".*\":NAMED_ETC=\"$named_etc\":" \
-  -e "s:NAMED_ADBLOCK_CONF=\"\":NAMED_ADBLOCK_CONF=\"$named_adblock_conf\":" \
-  -e "s:ADBLOCK_ZONE_FILE=\"\":ADBLOCK_ZONE_FILE=\"$named_zone\":" \
-  -e "s:NAMED_RESTART_CMD=\".*\":NAMED_RESTART_CMD=\"$named_restart_cmd\":" \
-  adblock.conf-sample >$adblock_conf_dir/adblock.conf || exit 3
-chmod 0644 $adblock_conf_dir/adblock.conf || exit 3
+if test -f $adblock_conf_dir/adblock.conf; then
+  if $force; then
+    install_conf=true
+  else
+    install_conf=false
+    echo "You already have adblock configuration file, $adblock_conf_dir/adblock.conf." 1>&2
+    echo "To replace it, use the -f option." 1>&2
+  fi
+else
+  install_conf=true
+fi
+
+if $install_conf; then
+  sed \
+    -e "s:NAMED_ETC=\".*\":NAMED_ETC=\"$named_etc\":" \
+    -e "s:NAMED_ADBLOCK_CONF=\"\":NAMED_ADBLOCK_CONF=\"$named_adblock_conf\":" \
+    -e "s:ADBLOCK_ZONE_FILE=\"\":ADBLOCK_ZONE_FILE=\"$named_zone\":" \
+    -e "s:NAMED_RESTART_CMD=\".*\":NAMED_RESTART_CMD=\"$named_restart_cmd\":" \
+    adblock.conf-sample >$adblock_conf_dir/adblock.conf || exit 3
+  chmod 0644 $adblock_conf_dir/adblock.conf || exit 3
+fi
 
 if [ ! -e $named_adblock_conf ]; then
   touch $named_adblock_conf || exit 3
@@ -132,8 +146,8 @@ if test $dhclient; then
 fi
 
 if [ $force = false ] && [ -e $named_zone ]; then
-  echo "You already have adblock zone file, $named_zone."
-  echo "If you want to replace it, use -f option."
+  echo "You already have adblock zone file, $named_zone." 1>&2
+  echo "To replace it, use the -f option." 1>&2
 else
   eval $install_cmd -m 644 named.zone.adblock $named_zone || exit 3
   echo "You will probably want to edit the adblock zone file, $named_zone,"
