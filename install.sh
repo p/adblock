@@ -61,6 +61,10 @@ case $layout in
     named_restart_cmd="rndc reload"
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/usr/local/etc
+    if $dhclient; then
+      echo "Don't know where dhclient exit hooks file should be placed' 1>&2
+      exit 1
+    fi
     dhclient_exit_hooks=
     ;;
   openbsd )
@@ -74,6 +78,10 @@ case $layout in
     named_restart_cmd="rndc reload"
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/etc
+    if $dhclient; then
+      echo "Don't know where dhclient exit hooks file should be placed' 1>&2
+      exit 1
+    fi
     dhclient_exit_hooks=
     ;;
   debian )
