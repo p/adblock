@@ -106,6 +106,8 @@ case $layout in
     ;;
 esac
 
+cd $(dirname "$0")
+
 install_cmd="install -o root -g root"
 
 eval $install_cmd -d -m 755 $adblock_dir || exit 3
