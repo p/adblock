@@ -33,7 +33,7 @@ case $layout in
     ;;
 esac
 
-actual_ns=`egrep '^\s+nameserver' $RESOLV_CONF |awk '{print $2}'`
+actual_ns=`egrep '^\s*nameserver' $RESOLV_CONF |awk '{print $2}'`
 
 if test -n "$PASSTHROUGH_NAMESERVERS"; then
   for ns in $PASSTHROUGH_NAMESERVERS 127.0.0.1; do
@@ -55,20 +55,21 @@ inplace_sed() {
 }
 
 forwarders() {
-  echo 'forwarders {'
+  printf 'forwarders {'
   for ans in $actual_ns; do
-    echo "$ans; "
+    printf "$ans; "
   done
-  echo '};'
+  printf '};'
 }
 
+#set -x
 case $reason in
   "BOUND"|"RENEW"|"REBIND"|"REBOOT")
     # use DNS servers obtained by dhclient as forwarders
     # don't rely on spaces inside forwarders declaration in case the previous run left a blank forwarders line
     # note: -E and -i switches to sed are non-portable and won't work on openbsd, in particular 
     forwarders
-    inplace_sed -E -e 's/[ \t]*forwarders \{.*\};/'"`forwarders`'"'/' $NAMED_CONF
+    inplace_sed -E -e 's/[ \t]*forwarders \{.*\};/'"`forwarders`"/ $NAMED_CONF
     # tell name server to use new forwarders
     rndc reload
     # replace nameserver declarations in resolv.conf
