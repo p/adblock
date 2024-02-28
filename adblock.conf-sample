@@ -2,23 +2,31 @@
 
 # path to bind configuration
 NAMED_ETC="/var/named/etc"
+
 # path to bind's adblock.conf
 # touch it if installing adblock on a new system
 NAMED_ADBLOCK_CONF=""
+
 # path to adblock's zone file
 ADBLOCK_ZONE_FILE=""
+
 # command to restart named
 NAMED_RESTART_CMD="rndc reload"
+
 # for ip blocking, path to the file holding adserver ips
 ADSERVERIPS="/etc/pf-tables/adservers"
+
 # If dhclient exit hook is installed, the hook will skip local adblock and
 # forward all queries to the gateways in the below list.
 # If another gateway is active, the hook will route DNS queries through the
 # local DNS serer.
 PASSTHROUGH_GATEWAYS="200.200.200.200"
+
 # export complete list of blocked zones to this file after adding new zones
 DNSBLOCKLIST="/var/www/htdocs/dnsblocklist"
+
 # create one file per blocked zone in this directory
 DNSBLOCKLISTDIR="/var/dnsblocklist"
+
 # add blocked sites to web repository as well
 #WEB_REPOSITORY="http://adservers.your-site.com/add?user=adblock&password=sekrit&name="
