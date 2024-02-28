@@ -17,10 +17,10 @@ NAMED_RESTART_CMD="rndc reload"
 ADSERVERIPS="/etc/pf-tables/adservers"
 
 # If dhclient exit hook is installed, the hook will skip local adblock and
-# forward all queries to the gateways in the below list.
-# If another gateway is active, the hook will route DNS queries through the
+# forward all queries to the nameservers in the below list.
+# If another nameserver is active, the hook will route DNS queries through the
 # local DNS serer.
-PASSTHROUGH_GATEWAYS="200.200.200.200"
+PASSTHROUGH_NAMESERVERS="200.200.200.200"
 
 # export complete list of blocked zones to this file after adding new zones
 DNSBLOCKLIST="/var/www/htdocs/dnsblocklist"

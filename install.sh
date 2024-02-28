@@ -12,7 +12,7 @@ usage() {
 
 dhclient=false
 force=false
-while getopts ":fh" option; do
+while getopts ":dfh" option; do
   case $option in
     d )
       dhclient=true ;;

@@ -1,21 +1,48 @@
 #!/bin/sh
 
-# Uncomment the following line when debugging:
-#set -x
+set -e
 
 # allow overriding resolv.conf location for testing
 RESOLV_CONF=${RESOLV_CONF:-/etc/resolv.conf}
 
-# change to location of named.conf on your system, if necessary
-# FreeBSD:
-NAMED_CONF=${NAMED_CONF:-/etc/namedb/named.conf}
-# Debian:
-#NAMED_CONF=${NAMED_CONF:-/etc/bind/named.conf.options}
+. /etc/adblock.conf
 
-# do not use local nameserver on networks that have network-wide adblock configuration
-# in this case networks with gateways 10.0.0.254 and 10.0.3.254 have ad blocking
-if grep -q 'nameserver 10\.0\.[03]\.254' $RESOLV_CONF; then
-    exit
+layout=unknown
+case `uname -s` in
+  FreeBSD )
+    layout=freebsd ;;
+  OpenBSD )
+    layout=openbsd ;;
+  Linux )
+    if test -f /etc/debian_version || test -f /etc/devuan_version; then
+      layout=debian
+    fi
+    ;;
+esac
+
+case $layout in
+  debian)
+    NAMED_CONF=${NAMED_ETC}/named.conf.options
+    ;;
+  freebsd)
+    NAMED_CONF=${NAMED_ETC}/named.conf
+    ;;
+  *)
+    echo "Bad layout: $layout" 1>&2
+    exit 1
+    ;;
+esac
+
+actual_ns=`egrep '^\s+nameserver' $RESOLV_CONF |awk '{print $2}'`
+
+if test -n "$PASSTHROUGH_NAMESERVERS"; then
+  for ns in $PASSTHROUGH_NAMESERVERS 127.0.0.1; do
+    for ans in $actual_ns; do
+      if test "$ans" = "$ns"; then
+        exit
+      fi
+    done
+  done
 fi
 
 inplace_sed() {
@@ -27,13 +54,21 @@ inplace_sed() {
   fi
 }
 
+forwarders() {
+  echo 'forwarders {'
+  for ans in $actual_ns; do
+    echo "$ans; "
+  done
+  echo '};'
+}
+
 case $reason in
   "BOUND"|"RENEW"|"REBIND"|"REBOOT")
     # use DNS servers obtained by dhclient as forwarders
-    forwarders=$(echo "forwarders {" $(grep ^nameserver <$RESOLV_CONF |awk '{ print $2 ";" }') "};")
     # don't rely on spaces inside forwarders declaration in case the previous run left a blank forwarders line
     # note: -E and -i switches to sed are non-portable and won't work on openbsd, in particular 
-    inplace_sed -E -e 's/[ \t]*forwarders \{.*\};/'"$forwarders"'/' $NAMED_CONF
+    forwarders
+    inplace_sed -E -e 's/[ \t]*forwarders \{.*\};/'"`forwarders`'"'/' $NAMED_CONF
     # tell name server to use new forwarders
     rndc reload
     # replace nameserver declarations in resolv.conf
