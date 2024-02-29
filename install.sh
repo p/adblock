@@ -4,7 +4,7 @@
 
 usage() {
   echo "Usage: `basename $0` [-d] [-f] [-h]"
-  echo "  -d  Install dhclient-exit-hooks to switch between local and network DNS server based on the network"
+  echo "  -d  Install dhclient-exit-hook to switch between local and network DNS server based on the network"
   echo "  -f  Force overwrite of adblock zone file, if it already exists"
   echo "  -h  This help text"
   exit ${1:-1}
@@ -62,10 +62,10 @@ case $layout in
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/usr/local/etc
     if $dhclient; then
-      echo "Don't know where dhclient exit hooks file should be placed' 1>&2
+      echo "Don't know where dhclient exit hook file should be placed' 1>&2
       exit 1
     fi
-    dhclient_exit_hooks=
+    dhclient_exit_hook=
     ;;
   openbsd )
     named_config=/var/named
@@ -79,10 +79,10 @@ case $layout in
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/etc
     if $dhclient; then
-      echo "Don't know where dhclient exit hooks file should be placed' 1>&2
+      echo "Don't know where dhclient exit hook file should be placed' 1>&2
       exit 1
     fi
-    dhclient_exit_hooks=
+    dhclient_exit_hook=
     ;;
   debian )
     named_config=/etc/bind
@@ -102,7 +102,7 @@ case $layout in
     named_restart_cmd="$init_script reload"
     adblock_dir=/usr/local/sbin
     adblock_conf_dir=/etc
-    dhclient_exit_hooks=/etc/dhcp/dhclient-exit-hooks.d/adblock
+    dhclient_exit_hook=/etc/dhcp/dhclient-exit-hooks.d/adblock
     ;;
 esac
 
@@ -142,7 +142,7 @@ if [ ! -e $named_adblock_conf ]; then
 fi
 
 if test $dhclient; then
-  eval $install_cmd -m 755 dhclient-exit-hooks $dhclient_exit_hooks
+  eval $install_cmd -m 755 dhclient-exit-hook $dhclient_exit_hook
 fi
 
 if [ $force = false ] && [ -e $named_zone ]; then

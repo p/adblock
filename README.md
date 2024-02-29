@@ -76,13 +76,13 @@ Edit it to have a line like this:
 Ensure that there are no extra spaces around the braces as the dhclient
 hook script is fairly primitive in its matching logic.
 
-Then place the `dhclient-exit-hooks` script that comes with adblock
+Then place the `dhclient-exit-hook` script that comes with adblock
 into a location appropriate for your system, for example for Debian
 this can be accomplished as follows:
 
-    sudo cp dhclient-exit-hooks /etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hooks
+    sudo install -o root -g root -m 755 dhclient-exit-hook /etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hook
 
-Then edit the installed file, `/etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hooks`
+Then edit the installed file, `/etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hook`
 in this case. Check that the path to `named.conf` is correct for your system
 and points to the file containing the `forwarders` declaration.
 You can also whitelist certain nameservers - for instance,
