@@ -42,7 +42,7 @@ usage() {
   echo "    -l    Work locally, do not update web repository"
   echo "    -w    Update DNS block list only"
   echo 
-  exit 1
+  exit ${1:-1}
 }
 
 local_only=no
@@ -50,7 +50,7 @@ dnsblocklist_only=false
 while getopts :hlw option; do
   case $option in
     h )
-      usage ;;
+      usage 0 ;;
     l )
       local_only=yes ; shift ;;
     w )
