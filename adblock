@@ -17,129 +17,129 @@
 
 found_config=no
 for etc in /etc /usr/local/etc; do
-    if [ -f $etc/adblock.conf ]; then
-        . $etc/adblock.conf
-        found_config=yes
-        break
-    fi
+  if [ -f $etc/adblock.conf ]; then
+    . $etc/adblock.conf
+    found_config=yes
+    break
+  fi
 done
 
 if [ "$found_config" != "yes" ]; then
-    echo "Configuration file not found" 1>&2
-    exit 1
+  echo "Configuration file not found" 1>&2
+  exit 1
 fi
 
 if [ ! -f $NAMED_ADBLOCK_CONF ]; then
-    echo "Bind's named-adblock.conf, ${NAMED_ADBLOCK_CONF}, is not found" 1>&2
-    echo "If this is the first time you're running adblock on this system, touch it" 1>&2
-    exit 1
+  echo "Bind's named-adblock.conf, ${NAMED_ADBLOCK_CONF}, is not found" 1>&2
+  echo "If this is the first time you're running adblock on this system, touch it" 1>&2
+  exit 1
 fi
 
 usage() {
-    echo "Usage: $(basename $0) [-h] [-l] domain [domain ...]"
-    echo
-    echo "    -h    This help"
-    echo "    -l    Work locally, do not update web repository"
-    echo "    -w    Update DNS block list only"
-    echo 
-    exit 1
+  echo "Usage: $(basename $0) [-h] [-l] domain [domain ...]"
+  echo
+  echo "    -h    This help"
+  echo "    -l    Work locally, do not update web repository"
+  echo "    -w    Update DNS block list only"
+  echo 
+  exit 1
 }
 
 local_only=no
 dnsblocklist_only=false
 while getopts :hlw option; do
-    case $option in
-        h )
-            usage ;;
-        l )
-            local_only=yes ; shift ;;
-        w )
-           dnsblocklist_only=true; shift;; 
-        * )
-            usage ;;
-    esac
+  case $option in
+    h )
+      usage ;;
+    l )
+      local_only=yes ; shift ;;
+    w )
+     dnsblocklist_only=true; shift;; 
+    * )
+      usage ;;
+  esac
 done
 
 if test -z "$1" && ! $dnsblocklist_only; then
-    usage 1>&2
-    exit
+  usage 1>&2
+  exit
 fi
 
 update_dnsblocklists() {
-    if [ -n "$DNSBLOCKLIST" ]; then
-        awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
-        sort < ${NAMED_ADBLOCK_CONF} > `dirname ${DNSBLOCKLIST}`/adblock.conf
-    fi
-    if [ -n "$DNSBLOCKLISTDIR" ]; then
-        for domain in $(awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/'); do
-            touch "$DNSBLOCKLISTDIR/$domain"
-        done
-    fi
+  if [ -n "$DNSBLOCKLIST" ]; then
+    awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/' | sort > ${DNSBLOCKLIST}
+    sort < ${NAMED_ADBLOCK_CONF} > `dirname ${DNSBLOCKLIST}`/adblock.conf
+  fi
+  if [ -n "$DNSBLOCKLISTDIR" ]; then
+    for domain in $(awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | sed -e 's/"\(.*\)"/\1/'); do
+      touch "$DNSBLOCKLISTDIR/$domain"
+    done
+  fi
 }
 
 if eval $dnsblocklist_only; then
-    update_dnsblocklists
-    exit
+  update_dnsblocklists
+  exit
 fi
 
 web_client=""
 if [ $local_only = no ] && [ -n "$WEB_REPOSITORY" ]; then
-    for client in "wget -q -O -" "fetch -q -o -"; do
-        which `echo $client |awk '{print $1}'` >/dev/null
-        if [ $? = 0 ]; then
-            web_client="$client"
-            break
-        fi
-    done
+  for client in "wget -q -O -" "fetch -q -o -"; do
+    which `echo $client |awk '{print $1}'` >/dev/null
+    if [ $? = 0 ]; then
+      web_client="$client"
+      break
+    fi
+  done
 fi
 
 need_named_reload=""
 
 while [ -n "$1" ]; do
-    # is it a hostname or an ip address?
-    if echo $1 | egrep -q '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
-        ip=$1
-        if ! grep -q $(echo $ip | sed -e 's/\./\\./g') < ${ADSERVERIPS}; then
-            echo $ip >> ${ADSERVERIPS}
-            pfctl -t adservers -T add $ip 2>/dev/null
-            echo A $ip
-        else
-            echo E $ip
-        fi
+  # is it a hostname or an ip address?
+  if echo $1 | egrep -q '^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$'; then
+    ip=$1
+    if ! grep -q $(echo $ip | sed -e 's/\./\\./g') < ${ADSERVERIPS}; then
+      echo $ip >> ${ADSERVERIPS}
+      pfctl -t adservers -T add $ip 2>/dev/null
+      echo A $ip
     else
-        # lowercase domain
-        domain=$(echo "$1" | sed -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/)
-        if ! awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | grep -q "\"$(echo $domain | sed -e 's/\./\\./g')\"" ; then
-            echo "zone \"$domain\" { type master; file \"$ADBLOCK_ZONE_FILE\"; };" >> ${NAMED_ADBLOCK_CONF}
-            status=A
-            need_named_reload="1"
-        else
-            status=E
-        fi
-
-        if test "$status" = A && [ -n "$DNSBLOCKLISTDIR" ]; then
-            touch "$DNSBLOCKLISTDIR/$domain"
-        fi
-        if [ -n "$web_client" ]; then
-            extra_status="/$(printf %-6s `$web_client ${WEB_REPOSITORY}$domain`)"
-        else
-            extra_status=""
-        fi
-        echo "$status$extra_status" $domain
+      echo E $ip
     fi
-    shift
+  else
+    # lowercase domain
+    domain=$(echo "$1" | sed -e y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/)
+    if ! awk '{ print $2 }' < ${NAMED_ADBLOCK_CONF} | grep -q "\"$(echo $domain | sed -e 's/\./\\./g')\"" ; then
+      echo "zone \"$domain\" { type master; file \"$ADBLOCK_ZONE_FILE\"; };" >> ${NAMED_ADBLOCK_CONF}
+      status=A
+      need_named_reload="1"
+    else
+      status=E
+    fi
+
+    if test "$status" = A && [ -n "$DNSBLOCKLISTDIR" ]; then
+      touch "$DNSBLOCKLISTDIR/$domain"
+    fi
+    if [ -n "$web_client" ]; then
+      extra_status="/$(printf %-6s `$web_client ${WEB_REPOSITORY}$domain`)"
+    else
+      extra_status=""
+    fi
+    echo "$status$extra_status" $domain
+  fi
+  shift
 done
 
 if [ -f $ADSERVERIPS ]; then
-    adserveripcount=$(wc -l < ${ADSERVERIPS})
+  adserveripcount=$(wc -l < ${ADSERVERIPS})
 else
-    adserveripcount="0"
+  adserveripcount="0"
 fi
 
 echo $(wc -l < ${NAMED_ADBLOCK_CONF}) zones and $adserveripcount addresses currently blocked.
 if [ "$need_named_reload" = "1" ]; then
-    echo Restarting nameserver ...
-    eval $NAMED_RESTART_CMD
-    
-    update_dnsblocklists
+  echo Restarting nameserver ...
+  eval $NAMED_RESTART_CMD
+  
+  update_dnsblocklists
 fi
