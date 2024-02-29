@@ -20,7 +20,8 @@ ADSERVERIPS="/etc/pf-tables/adservers"
 # forward all queries to the nameservers in the below list.
 # If another nameserver is active, the hook will route DNS queries through the
 # local DNS serer.
-PASSTHROUGH_NAMESERVERS="200.200.200.200"
+#PASSTHROUGH_NAMESERVERS="10.0.0.1 10.1.0.1"
+PASSTHROUGH_NAMESERVERS=""
 
 # export complete list of blocked zones to this file after adding new zones
 DNSBLOCKLIST="/var/www/htdocs/dnsblocklist"

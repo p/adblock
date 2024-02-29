@@ -69,26 +69,28 @@ it will often be commented out:
 
 As Debian splits BIND configuration files, the correct file to edit
 on my system is `/etc/bind/named.conf.options`.
-Edit it to have a line like this:
+
+The install script should handle default BIND configuration files.
+If you made changes to the forwarders configuration and the default
+editing logic of the install script isn't working, edit the BIND
+configuration with options to have a line like this:
 
     forwarders { 0.0.0.0; };
 
 Ensure that there are no extra spaces around the braces as the dhclient
 hook script is fairly primitive in its matching logic.
 
-Then place the `dhclient-exit-hook` script that comes with adblock
-into a location appropriate for your system, for example for Debian
-this can be accomplished as follows:
+The `-r` argument to the install script should place the dhclient exit
+hook into an appropriate location on your system. If this doesn't happen,
+you can install the hook manually by running, e.g.:
 
     sudo install -o root -g root -m 755 dhclient-exit-hook /etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hook
 
-Then edit the installed file, `/etc/dhcp/dhclient-exit-hooks.d/adblock-exit-hook`
-in this case. Check that the path to `named.conf` is correct for your system
-and points to the file containing the `forwarders` declaration.
-You can also whitelist certain nameservers - for instance,
-if you have adblock installed on your home network you may wish to
-forward all queries straight to your network's DNS server when you are
-on that network.
+The hook script reads the configuration from `/etc/adblock.conf`
+for the BIND configuration file path. You can also set the
+`PASSTHROUGH_NAMESERVERS` configuration option to a space-separated
+list of servers that don't need local adblocking configuration (because,
+presumably, these servers already contain the adblocking configuration).
 
 Now try restarting the network:
 
