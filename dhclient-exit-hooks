@@ -68,8 +68,14 @@ case $reason in
     # use DNS servers obtained by dhclient as forwarders
     # don't rely on spaces inside forwarders declaration in case the previous run left a blank forwarders line
     # note: -E and -i switches to sed are non-portable and won't work on openbsd, in particular 
-    forwarders
-    inplace_sed -E -e 's/[ \t]*forwarders \{.*\};/'"`forwarders`"/ $NAMED_CONF
+    if egrep -q '^[ \t]*forwarders \{.*\};' $NAMED_CONF; then
+      inplace_sed -E -e 's/^[ \t]*forwarders \{.*\};/'" `forwarders` "/ $NAMED_CONF
+    elif egrep -q '^\s*//\s*forwarders\b' $NAMED_CONF; then
+      inplace_sed -E -e 's:^(\s*//\s*forwarders .*)$:'" `forwarders`"\\n\\1: $NAMED_CONF
+    else
+      echo "Warning: couldn't add forwarders statement to $NAMED_CONF" 1>&2
+      exit 0
+    fi
     # tell name server to use new forwarders
     rndc reload
     # replace nameserver declarations in resolv.conf
