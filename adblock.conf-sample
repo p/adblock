@@ -23,6 +23,11 @@ ADSERVERIPS="/etc/pf-tables/adservers"
 #PASSTHROUGH_NAMESERVERS="10.0.0.1 10.1.0.1"
 PASSTHROUGH_NAMESERVERS=""
 
+# When connected to these wireless networks, pass through the original
+# DNS servers.
+#PASSTHROUGH_NAMESERVER_SSIDS="NetGear"
+PASSTHROUGH_NAMESERVER_SSIDS=""
+
 # When connected to these wireless networks, do not use the network's
 # specified DNS server as forwarder.
 #DIRECT_DNS_SSIDS="NetGear"

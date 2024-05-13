@@ -56,6 +56,17 @@ if test -n "$PASSTHROUGH_NAMESERVERS"; then
   done
 fi
 
+if test -n "$PASSTHROUGH_NAMESERVER_SSIDS"; then
+  ssid=`active_ssid`
+  if test -n "$ssid"; then
+    for test_ssid in "$PASSTHROUGH_NAMESERVER_SSIDS"; do
+      if test "$ssid" = "$test_ssid"; then
+        exit
+      fi
+    done
+  fi
+fi
+
 if test -n "$DIRECT_DNS_SSIDS"; then
   ssid=`active_ssid`
   if test -n "$ssid"; then
