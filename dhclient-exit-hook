@@ -2,6 +2,8 @@
 
 set -e
 
+#exec 2>/tmp/deh
+
 # allow overriding resolv.conf location for testing
 RESOLV_CONF=${RESOLV_CONF:-/etc/resolv.conf}
 
@@ -45,6 +47,21 @@ if test -n "$PASSTHROUGH_NAMESERVERS"; then
   done
 fi
 
+if test -n "$DIRECT_DNS_SSIDS"; then
+  active_if=$(ip route get 1.1.1.1 | grep -Po '(?<=dev\s)\w+' | cut -f1 -d ' ')
+  if echo "$active_if" |grep -q ^wlan; then
+    ssid=`iwconfig "$active_if" |grep ESSID: |awk -F: '{print $2}' |tr -d '"	 '`
+    for test_ssid in "$DIRECT_DNS_SSIDS"; do
+      if test "$ssid" = "$test_ssid"; then
+        actual_ns=
+        break
+      else
+        echo 'no' 1>&2
+      fi
+    done
+  fi
+fi
+
 inplace_sed() {
   if test `uname -s` = Linux; then
     sed -i "$@"
@@ -62,7 +79,6 @@ forwarders() {
   printf '};'
 }
 
-#set -x
 case $reason in
   "BOUND"|"RENEW"|"REBIND"|"REBOOT")
     # use DNS servers obtained by dhclient as forwarders
