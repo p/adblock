@@ -2,6 +2,7 @@
 
 set -e
 
+#set -x
 #exec 2>/tmp/deh
 
 # allow overriding resolv.conf location for testing
@@ -37,6 +38,14 @@ esac
 
 actual_ns=`egrep '^\s*nameserver' $RESOLV_CONF |awk '{print $2}'`
 
+active_ssid() {
+  active_if=$(ip route get 1.1.1.1 | grep -Po '(?<=dev\s)\w+' | cut -f1 -d ' ')
+  if echo "$active_if" |grep -q ^wlan; then
+    ssid=`iwconfig "$active_if" |grep ESSID: |awk -F: '{print $2}' |tr -d '"	 '`
+    echo "$ssid"
+  fi
+}
+
 if test -n "$PASSTHROUGH_NAMESERVERS"; then
   for ns in $PASSTHROUGH_NAMESERVERS 127.0.0.1; do
     for ans in $actual_ns; do
@@ -48,15 +57,12 @@ if test -n "$PASSTHROUGH_NAMESERVERS"; then
 fi
 
 if test -n "$DIRECT_DNS_SSIDS"; then
-  active_if=$(ip route get 1.1.1.1 | grep -Po '(?<=dev\s)\w+' | cut -f1 -d ' ')
-  if echo "$active_if" |grep -q ^wlan; then
-    ssid=`iwconfig "$active_if" |grep ESSID: |awk -F: '{print $2}' |tr -d '"	 '`
+  ssid=`active_ssid`
+  if test -n "$ssid"; then
     for test_ssid in "$DIRECT_DNS_SSIDS"; do
       if test "$ssid" = "$test_ssid"; then
         actual_ns=
         break
-      else
-        echo 'no' 1>&2
       fi
     done
   fi
