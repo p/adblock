@@ -109,8 +109,11 @@ case $reason in
       echo "Warning: couldn't add forwarders statement to $NAMED_CONF" 1>&2
       exit 0
     fi
+    
+    # TODO check that there is exactly one forwarders declaration
+    
     # tell name server to use new forwarders
-    rndc reload
+    rndc reload || /etc/init.d/named reload || /etc/init.d/named restart
     # replace nameserver declarations in resolv.conf
     tempfile=`mktemp -t dhclient_hook.XXXXXX`
     <$RESOLV_CONF sed -e '/^nameserver/d' > $tempfile
